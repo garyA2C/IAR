@@ -127,6 +127,8 @@ class cleanerEnv(gym.Env):
 
         fig, (ax1, ax2) = plt.subplots(1, 2)
         ax1.imshow(self.observation_grid.tab, cmap=cmap, norm=norm)
+        ax1.scatter([self.pos[1]], [self.pos[0]])
         ax2.imshow(self.grid.tab, cmap=cmap, norm=norm)
+        ax2.scatter([self.pos[1]], [self.pos[0]])
 
         plt.show()
