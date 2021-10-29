@@ -82,6 +82,26 @@ class cleanerEnv(gym.Env):
             from gym.envs.classic_control import rendering
             self.viewer = rendering.Viewer(screen_width, screen_height)
 
+            wallup = rendering.FilledPolygon([(0, 500), (1000, 500), (1000, 499), (0, 499)])
+            self.walluptrans = rendering.Transform()
+            wallup.add_attr(self.walluptrans)
+            self.viewer.add_geom(wallup)
+
+            wallleft = rendering.FilledPolygon([(0, 0), (0, 500), (1, 500), (1, 0)])
+            self.walllefttrans = rendering.Transform()
+            wallleft.add_attr(self.walllefttrans)
+            self.viewer.add_geom(wallleft)
+
+            wallright = rendering.FilledPolygon([(1000, 0), (1000, 500), (999, 500), (999, 0)])
+            self.wallrighttrans = rendering.Transform()
+            wallright.add_attr(self.wallrighttrans)
+            self.viewer.add_geom(wallright)
+
+            walldown = rendering.FilledPolygon([(0, 0), (1000, 0), (1000, 1), (0, 1)])
+            self.walldowntrans = rendering.Transform()
+            walldown.add_attr(self.walldowntrans)
+            self.viewer.add_geom(walldown)
+
             wall1 = rendering.FilledPolygon([(290, 0), (300, 0), (300, 400), (290, 400)])
             self.wall1trans = rendering.Transform()
             wall1.add_attr(self.wall1trans)
