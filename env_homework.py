@@ -63,6 +63,10 @@ class cleanerEnv(gym.Env):
         self.sizex = 50
         self.sizey = 25
         self.dirtpercent = 5
+        self.r_detection = 5
+
+        self.pos = (1, 10)
+        self.battery = 50
 
         self.grid = Grid(self.sizex, self.sizey)
         self.grid.addWall(15, 0, 16, 20)
@@ -72,9 +76,8 @@ class cleanerEnv(gym.Env):
         self.grid.addChargingCase(1, 10)
 
         self.observation_grid = Grid(self.sizex, self.sizey, unknowed=True)
+        self.observe()
 
-        self.pos = (1, 10)
-        self.battery = 50
         self.state = None
 
     def step(self, action):
@@ -110,14 +113,20 @@ class cleanerEnv(gym.Env):
         else:
             reward = 0
 
-        #TODO update observation_grid en passant la valeur des cases à proximité de pos de 1 (unknown) à leur valeur dans la grille complète
+        self.observe()
 
         self.battery -= 1
         if self.battery <= 0:
             done = True
 
-        self.state = (self.observation_grid, self.battery)
+        self.state = (self.pos, self.battery, self.observation_grid)
         return self.state, reward, done, {}
+
+    def observe(self):
+        for x in range(self.sizex):
+            for y in range(self.sizey):
+                if (self.pos[0] - x) * (self.pos[0] - x) + (self.pos[1] - y) * (self.pos[1] - y) <= self.r_detection * self.r_detection:
+                    self.observation_grid.tab[x][y] = self.grid.tab[x][y]
 
     def render(self, mode="human"):
 
@@ -126,7 +135,8 @@ class cleanerEnv(gym.Env):
         bounds = [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
         norm = colors.BoundaryNorm(bounds, cmap.N)
 
-        fig, ax = plt.subplots()
-        ax.imshow(self.grid.tab, cmap=cmap, norm=norm)
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        ax1.imshow(self.observation_grid.tab, cmap=cmap, norm=norm)
+        ax2.imshow(self.grid.tab, cmap=cmap, norm=norm)
 
         plt.show()
