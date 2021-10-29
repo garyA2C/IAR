@@ -1,6 +1,8 @@
 import numpy as np
 import random
 from tkinter import *
+import gym
+
 
 
 class Box:
@@ -57,6 +59,40 @@ class Grid:
                     if random.random()*100 < percentage:
                         self.tab[i][j].makeDirty()
 
+
+class cleanerEnv(gym.Env):
+    def __init__(self):
+        self.sizex = 1000
+        self.sizey = 500
+        self.dirtpercent = 0.5
+
+        self.grid = Grid(self.sizex, self.sizey)
+        self.grid.addWall(290, 0, 300, 400)
+        self.grid.addWall(690, 100, 700, 500)
+        self.grid.closeGrid()
+        self.grid.addRandomDirt(self.dirtpercent)
+
+        self.viewer = None
+
+    def render(self, mode="human"):
+        screen_width = 1000
+        screen_height = 500
+
+        if self.viewer is None:
+            from gym.envs.classic_control import rendering
+            self.viewer = rendering.Viewer(screen_width, screen_height)
+
+            wall1 = rendering.FilledPolygon([(290, 0), (300, 0), (300, 400), (290, 400)])
+            self.wall1trans = rendering.Transform()
+            wall1.add_attr(self.wall1trans)
+            self.viewer.add_geom(wall1)
+
+            wall2 = rendering.FilledPolygon([(690, 500), (700, 500), (700, 100), (690, 100)])
+            self.wall2trans = rendering.Transform()
+            wall2.add_attr(self.wall2trans)
+            self.viewer.add_geom(wall2)
+
+        return self.viewer.render(return_rgb_array=mode == "rgb_array")
 
 
 def closeGridandDraw(grid, canvas, x, y):
