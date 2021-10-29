@@ -2,7 +2,8 @@ import numpy as np
 import random
 from tkinter import *
 import gym
-
+import matplotlib.pylot as plt
+from matplotlib import colors
 
 
 class Box:
@@ -113,6 +114,21 @@ class cleanerEnv(gym.Env):
             self.viewer.add_geom(wall2)
 
         return self.viewer.render(return_rgb_array=mode == "rgb_array")
+
+        # create discrete colormap
+        cmap = colors.ListedColormap(['grey', 'white', 'black', 'red', 'blue'])
+        bounds = [0, 10, 20]
+        norm = colors.BoundaryNorm(bounds, cmap.N)
+
+        fig, ax = plt.subplots()
+        ax.imshow(data, cmap=cmap, norm=norm)
+
+        # draw gridlines
+        ax.grid(which='major', axis='both', linestyle='-', color='k', linewidth=2)
+        ax.set_xticks(np.arange(-.5, 10, 1));
+        ax.set_yticks(np.arange(-.5, 10, 1));
+
+        plt.show()
 
 
 def closeGridandDraw(grid, canvas, x, y):

@@ -1,6 +1,6 @@
-import homework1
+import env_homework
 
-env = homework1.cleanerEnv()
+env = env_homework.cleanerEnv()
 
 while True:
     env.render()
