@@ -6,10 +6,10 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 
 
-    # def isInRange(self, x, y, r):
-    #     if (self.x - x) * (self.x - x) + (self.y - y) * (self.y - y) <= r * r:
-    #         return True
-    #     return False
+# def isInRange(self, x, y, r):
+#     if (self.x - x) * (self.x - x) + (self.y - y) * (self.y - y) <= r * r:
+#         return True
+#     return False
 
 
 class Grid:
@@ -22,13 +22,16 @@ class Grid:
     4 -> charging case
     """
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, unknowed=False):
         self.dx = x
         self.dy = y
         self.tab = np.empty((x, y), dtype=int)
         for i in range(x):
             for j in range(y):
-                self.tab[i][j] = 1
+                if unknowed:
+                    self.tab[i][j] = 0
+                else:
+                    self.tab[i][j] = 1
 
     def closeGrid(self):
         for i in range(self.dx):
@@ -47,9 +50,12 @@ class Grid:
         for i in range(self.dx):
             for j in range(self.dy):
                 if self.tab[i][j] != 2:
-                    if random.random()*100 < percentage:
+                    if random.random() * 100 < percentage:
                         self.tab[i][j] = 3
                         # print("(" + str(i) + ", " + str(j) + ")")
+
+    def addChargingCase(self, x, y):
+        self.tab[x][y] = 4
 
 
 class cleanerEnv(gym.Env):
@@ -63,22 +69,64 @@ class cleanerEnv(gym.Env):
         self.grid.addWall(35, 5, 36, 25)
         self.grid.closeGrid()
         self.grid.addRandomDirt(self.dirtpercent)
+        self.grid.addChargingCase(1, 10)
 
-        self.viewer = None
+        self.observation_grid = Grid(self.sizex, self.sizey, unknowed=True)
+
+        self.pos = (1, 10)
+        self.battery = 50
+        self.state = None
+
+    def step(self, action):
+        """
+        actions:
+        0 -> aller à droite
+        1 -> aller à gauche
+        2 -> avancer
+        3 -> reculer
+
+        rewards:
+        si sale -> 1
+        si occupé ou batterie vide -> -1000 et done
+        sinon 0
+        """
+
+        if action == 0:
+            self.pos = (self.pos[0] + 1, self.pos[1])
+        if action == 1:
+            self.pos = (self.pos[0] - 1, self.pos[1])
+        if action == 2:
+            self.pos = (self.pos[0], self.pos[1] + 1)
+        if action == 3:
+            self.pos = (self.pos[0], self.pos[1] - 1)
+
+        done = False
+        if self.grid.tab[self.pos[0]][self.pos[1]] == 3:
+            reward = 1
+            self.grid.tab[self.pos[0]][self.pos[1]] = 1
+        elif self.grid.tab[self.pos[0]][self.pos[1]] == 2:
+            reward = - 1000
+            done = True
+        else:
+            reward = 0
+
+        #TODO update observation_grid en passant la valeur des cases à proximité de pos de 1 (unknown) à leur valeur dans la grille complète
+
+        self.battery -= 1
+        if self.battery <= 0:
+            done = True
+
+        self.state = (self.observation_grid, self.battery)
+        return self.state, reward, done, {}
 
     def render(self, mode="human"):
 
         # create discrete colormap
         cmap = colors.ListedColormap(['grey', 'white', 'black', 'red', 'blue'])
-        bounds = [0, 1, 2, 3, 4]
+        bounds = [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
         norm = colors.BoundaryNorm(bounds, cmap.N)
 
         fig, ax = plt.subplots()
         ax.imshow(self.grid.tab, cmap=cmap, norm=norm)
-
-        # draw gridlines
-        # ax.grid(which='major', axis='both', linestyle='-', color='k', linewidth=1)
-        # ax.set_xticks(np.arange(-.5, 10, 1));
-        # ax.set_yticks(np.arange(-.5, 10, 1));
 
         plt.show()
