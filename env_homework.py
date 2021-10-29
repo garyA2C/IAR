@@ -1,15 +1,8 @@
 import numpy as np
 import random
-from tkinter import *
 import gym
 import matplotlib.pyplot as plt
 from matplotlib import colors
-
-
-# def isInRange(self, x, y, r):
-#     if (self.x - x) * (self.x - x) + (self.y - y) * (self.y - y) <= r * r:
-#         return True
-#     return False
 
 
 class Grid:
@@ -22,13 +15,13 @@ class Grid:
     4 -> charging case
     """
 
-    def __init__(self, x, y, unknowed=False):
+    def __init__(self, x, y, unknown=False):
         self.dx = x
         self.dy = y
         self.tab = np.empty((x, y), dtype=int)
         for i in range(x):
             for j in range(y):
-                if unknowed:
+                if unknown:
                     self.tab[i][j] = 0
                 else:
                     self.tab[i][j] = 1
@@ -52,7 +45,6 @@ class Grid:
                 if self.tab[i][j] != 2:
                     if random.random() * 100 < percentage:
                         self.tab[i][j] = 3
-                        # print("(" + str(i) + ", " + str(j) + ")")
 
     def addChargingCase(self, x, y):
         self.tab[x][y] = 4
@@ -75,8 +67,8 @@ class cleanerEnv(gym.Env):
         self.grid.addRandomDirt(self.dirtpercent)
         self.grid.addChargingCase(1, 10)
 
-        self.observation_grid = Grid(self.sizex, self.sizey, unknowed=True)
-        self.observe()
+        self.observation_grid = Grid(self.sizex, self.sizey, unknown=True)
+        self.updateObservationGrid()
 
         self.state = None
 
@@ -113,7 +105,7 @@ class cleanerEnv(gym.Env):
         else:
             reward = 0
 
-        self.observe()
+        self.updateObservationGrid()
 
         self.battery -= 1
         if self.battery <= 0:
@@ -122,15 +114,13 @@ class cleanerEnv(gym.Env):
         self.state = (self.pos, self.battery, self.observation_grid)
         return self.state, reward, done, {}
 
-    def observe(self):
+    def updateObservationGrid(self):
         for x in range(self.sizex):
             for y in range(self.sizey):
                 if (self.pos[0] - x) * (self.pos[0] - x) + (self.pos[1] - y) * (self.pos[1] - y) <= self.r_detection * self.r_detection:
                     self.observation_grid.tab[x][y] = self.grid.tab[x][y]
 
     def render(self, mode="human"):
-
-        # create discrete colormap
         cmap = colors.ListedColormap(['grey', 'white', 'black', 'red', 'blue'])
         bounds = [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
         norm = colors.BoundaryNorm(bounds, cmap.N)
