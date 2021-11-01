@@ -70,7 +70,7 @@ class cleanerEnv(gym.Env):
         self.sizey = 25
         self.dirtpercent = 5
         self.r_detection = 5
-        self.battery_capacity = 200
+        self.battery_capacity = self.sizex * self.sizey / 5
 
         self.pos = (1, 10)
         self.battery = self.battery_capacity
@@ -149,8 +149,8 @@ class cleanerEnv(gym.Env):
 
     def detect_close_cells(self):
         detected_cells = []
-        for x in range(self.grid.dx):
-            for y in range(self.grid.dy):
+        for x in range(self.pos[0] - self.r_detection, self.pos[0] + self.r_detection):
+            for y in range(self.pos[1] - self.r_detection, self.pos[1] + self.r_detection):
                 if (self.pos[0] - x) * (self.pos[0] - x) + (self.pos[1] - y) * (self.pos[1] - y) <= self.r_detection * self.r_detection:
                     detected_cells.append(self.grid.tab[x][y])
                     self.observation_grid.tab[x][y] = self.grid.tab[x][y]
