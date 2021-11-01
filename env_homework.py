@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import gym
+from gym import spaces
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
@@ -92,6 +93,18 @@ class cleanerEnv(gym.Env):
         self.state.append(self.battery)
         self.state.append(self.pos[0])
         self.state.append(self.pos[1])
+
+        nb_close_cells = len(self.state) - 3
+        high = np.array([], dtype=np.int,)
+        for _ in range(nb_close_cells):
+            np.append(high, 4)
+        np.append(high,
+                  [self.battery_capacity,
+                   self.sizex + self.r_detection,
+                   self.sizey + self.r_detection])
+
+        self.observation_space = spaces.Box(0, high, dtype=np.int)
+        self.action_space = spaces.Discrete(4)
 
     def step(self, action):
         """
