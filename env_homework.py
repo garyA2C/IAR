@@ -70,9 +70,10 @@ class cleanerEnv(gym.Env):
         self.sizey = 25
         self.dirtpercent = 5
         self.r_detection = 5
+        self.battery_capacity = 200
 
         self.pos = (1, 10)
-        self.battery = 50
+        self.battery = self.battery_capacity
 
         self.grid = Grid(self.sizex, self.sizey)
         self.grid.addWall(15, 0, 16, 20)
@@ -126,7 +127,7 @@ class cleanerEnv(gym.Env):
             reward = - 1000
             done = True
         elif self.grid.tab[self.pos[0]][self.pos[1]] == 4:
-            self.battery = 50
+            self.battery = self.battery_capacity
             reward = 0
         else:
             reward = 0
@@ -135,6 +136,7 @@ class cleanerEnv(gym.Env):
         self.battery -= 1
         if self.battery <= 0:
             done = True
+            reward = - 1000
 
         # Detect the cells close to the robot and add their value to the state,
         # along with the battery and the position of the robot
@@ -147,8 +149,8 @@ class cleanerEnv(gym.Env):
 
     def detect_close_cells(self):
         detected_cells = []
-        for x in range(self.sizex):
-            for y in range(self.sizey):
+        for x in range(self.grid.dx):
+            for y in range(self.grid.dy):
                 if (self.pos[0] - x) * (self.pos[0] - x) + (self.pos[1] - y) * (self.pos[1] - y) <= self.r_detection * self.r_detection:
                     detected_cells.append(self.grid.tab[x][y])
                     self.observation_grid.tab[x][y] = self.grid.tab[x][y]
@@ -159,6 +161,7 @@ class cleanerEnv(gym.Env):
         return self.state
 
     def render(self, mode="human"):
+        plt.close('all')
         cmap = colors.ListedColormap(['grey', 'white', 'black', 'red', 'blue'])
         bounds = [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
         norm = colors.BoundaryNorm(bounds, cmap.N)
