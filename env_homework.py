@@ -50,6 +50,20 @@ class Grid:
         self.tab[x][y] = 4
 
 
+def addBorderWalls(grid, r_detection):
+    new_grid = Grid(grid.dx + r_detection*2, grid.dy + r_detection*2)
+
+    new_grid.addWall(0, 0, new_grid.dx, r_detection)
+    new_grid.addWall(0, new_grid.dy - r_detection, new_grid.dx, new_grid.dy)
+    new_grid.addWall(0, r_detection, r_detection, new_grid.dy - r_detection)
+    new_grid.addWall(new_grid.dx - r_detection, r_detection, new_grid.dx, new_grid.dy - r_detection)
+
+    for i in range(grid.dx):
+        for j in range(grid.dy):
+            new_grid.tab[i + r_detection][j + r_detection] = grid.tab[i][j]
+    return new_grid
+
+
 class cleanerEnv(gym.Env):
     def __init__(self):
         self.sizex = 50
@@ -67,10 +81,16 @@ class cleanerEnv(gym.Env):
         self.grid.addRandomDirt(self.dirtpercent)
         self.grid.addChargingCase(1, 10)
 
-        self.observation_grid = Grid(self.sizex, self.sizey, unknown=True)
-        self.updateObservationGrid()
+        # Ajout de mur au bord de la grille pour ne pas avoir moins de cases à portée (pour l'état) lorsque le robot se trouve près d'un bord
+        self.grid = addBorderWalls(self.grid, self.r_detection)
+        self.pos = (self.pos[0] + self.r_detection, self.pos[1] + self.r_detection)
 
-        self.state = None
+        self.observation_grid = Grid(self.grid.dx, self.grid.dy, unknown=True)
+
+        self.state = self.detect_close_cells()
+        self.state.append(self.battery)
+        self.state.append(self.pos[0])
+        self.state.append(self.pos[1])
 
     def step(self, action):
         """
@@ -81,11 +101,13 @@ class cleanerEnv(gym.Env):
         3 -> reculer
 
         rewards:
-        si sale -> 1
-        si occupé ou batterie vide -> -1000 et done
+        si sale -> reward = 1
+        si occupé ou batterie vide -> reward = -1000 et done
+        si cellule de charge -> remplis la batterie et reward = 0
         sinon 0
         """
 
+        # Move the robot
         if action == 0:
             self.pos = (self.pos[0] + 1, self.pos[1])
         if action == 1:
@@ -95,6 +117,7 @@ class cleanerEnv(gym.Env):
         if action == 3:
             self.pos = (self.pos[0], self.pos[1] - 1)
 
+        # Process on which type of case the robot is
         done = False
         if self.grid.tab[self.pos[0]][self.pos[1]] == 3:
             reward = 1
@@ -102,23 +125,38 @@ class cleanerEnv(gym.Env):
         elif self.grid.tab[self.pos[0]][self.pos[1]] == 2:
             reward = - 1000
             done = True
+        elif self.grid.tab[self.pos[0]][self.pos[1]] == 4:
+            self.battery = 50
+            reward = 0
         else:
             reward = 0
 
-        self.updateObservationGrid()
-
+        # Decrease and check the battery
         self.battery -= 1
         if self.battery <= 0:
             done = True
 
-        self.state = (self.pos, self.battery, self.observation_grid)
+        # Detect the cells close to the robot and add their value to the state,
+        # along with the battery and the position of the robot
+        self.state = self.detect_close_cells()
+        self.state.append(self.battery)
+        self.state.append(self.pos[0])
+        self.state.append(self.pos[1])
+
         return self.state, reward, done, {}
 
-    def updateObservationGrid(self):
+    def detect_close_cells(self):
+        detected_cells = []
         for x in range(self.sizex):
             for y in range(self.sizey):
                 if (self.pos[0] - x) * (self.pos[0] - x) + (self.pos[1] - y) * (self.pos[1] - y) <= self.r_detection * self.r_detection:
+                    detected_cells.append(self.grid.tab[x][y])
                     self.observation_grid.tab[x][y] = self.grid.tab[x][y]
+        return detected_cells
+
+    def reset(self):
+        self.__init__()
+        return self.state
 
     def render(self, mode="human"):
         cmap = colors.ListedColormap(['grey', 'white', 'black', 'red', 'blue'])
@@ -132,3 +170,4 @@ class cleanerEnv(gym.Env):
         ax2.scatter([self.pos[1]], [self.pos[0]])
 
         plt.show()
+
